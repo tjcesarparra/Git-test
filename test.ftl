@@ -8,7 +8,7 @@ All Rights Reserved.
 
 System: CaseWare
 Module: CAS
-Version: 0.0.2c
+Version: 0.0.2b
 Company: Trajectory Inc.
 CreationDate: 20230425
 FileName: CaseWare Invoice Template.ftl
@@ -32,6 +32,30 @@ FileName: CaseWare Invoice Template.ftl
     <#nested lastItem[groupField], sortedItems[groupStart ..< groupEnd]>
 </#macro>
 
+<#macro listGroupsOfSorted items groupFields...>
+  <#if items?size == 0><#return></#if>
+  <#local groupStart = 0>
+  <#list items as item>
+    <#if !item?is_first && !subvariablesEqual(item, lastItem, groupFields)>
+      <#local groupEnd = item?index>
+      <#nested items[groupStart ..< groupEnd]>
+      <#local groupStart = groupEnd>
+    </#if>
+    <#local lastItem = item>
+  </#list>
+  <#local groupEnd = items?size>
+  <#nested items[groupStart ..< groupEnd]>
+</#macro>
+
+<#function subvariablesEqual(obj1, obj2, subVars)>
+  <#list subVars as subVar>
+    <#if obj1[subVar] != obj2[subVar]>
+      <#return false>
+    </#if>
+  </#list>
+  <#return true>
+</#function>
+
 <#--  functon Definition  -->
 <#function extractFirstCharacter text>
     <#assign a_subsidiaries = ['23']>
@@ -52,7 +76,7 @@ FileName: CaseWare Invoice Template.ftl
     "collections":[{
         "alias": "casewaretranslation",
         "collection": "custcollection_cw_translation",
-        "keys": ["PHONE", "ATTENTION","CUSTOMERNUMBER","PRODUCTNAME","TOTAL","PAYMENTTERMS","BILLTO","SHIPTO","SHIPPINGINFORMATION","PRICEPERUNIT","UNIT","TERMSDETAILS1","TERM","TERMS","INVTERMS1","INVTERMS2","INVTERMS3","INVTERMS4","INVTERMS5","INVTERMS6","INVTERMS7","INVTERMS8","TAXNUMBER","COMPANYREGNO","VENDORTAXID","VATNUMBER","DUEUPONRECEIPT","PAYBYWIRE","PAYBYBANKTRANSFER","BILLINGINQUIRIES","PAYMENTMETHODS","CCSURCHARGE","PAYBYCHEQUE","QUANTITY","CUSTOMERVAT","VAT","MONTHS","NET10","NET120","NET15","NET30","NET45","NET60","NET90","NOTES","CLOUDFIRMNAME"]}]
+        "keys": ["PHONE", "INVTERMS5LATAMGOV","INVTERMS7LATAMGOV","ATTENTION","CUSTOMERNUMBER","PRODUCTNAME","TOTAL","PAYMENTTERMS","BILLTO","SHIPTO","SHIPPINGINFORMATION","PRICEPERUNIT","INVOICE","INVOICENUMBER","UNIT","TERMSDETAILS1","TERM","TERMS","INVTERMS1","INVTERMS2","INVTERMS3","INVTERMS4","INVTERMS5","INVTERMS6","INVTERMS7","INVTERMS8","TAXNUMBER","COMPANYREGNO","VENDORTAXID","VATNUMBER","DUEUPONRECEIPT","PAYBYWIRE","PAYBYBANKTRANSFER","BILLINGINQUIRIES","PAYMENTMETHODS","CCSURCHARGE","PAYBYCHEQUE","QUANTITY","CUSTOMERVAT","VAT","MONTHS","NET10","NET120","NET15","NET30","NET45","NET60","NET90","NOTES","CLOUDFIRMNAME"]}]
     })>
 
     <head>
@@ -88,7 +112,7 @@ FileName: CaseWare Invoice Template.ftl
                          
                       <#else>
                         <td align="right"><span style="text-transform: uppercase"><span
-                                    class="title">${record@title}</span></span></td>
+                                    class="title">${handle.casewaretranslation.INVOICE}</span></span></td>
                         </#if>
 
                         
@@ -227,14 +251,26 @@ FileName: CaseWare Invoice Template.ftl
             <tr>
             <td align="center" class="addressheader" colspan="3"><b>${subsidiary.legalname}</b></td>
             </tr>
+          <#if record.subsidiary="EU04 StriveCo GmbH">
             <tr>
+                <td align="center" class="addressheader" colspan="3"><b>${subsidiary.addr1},
+                        ${subsidiary.city} ${subsidiary.state} ${subsidiary.zip}</b></td>
+            </tr>
+            <#else>
+              <tr>
                 <td align="center" class="addressheader" colspan="3"><b>${subsidiary.addr1} ${subsidiary.addr2}
                         ${subsidiary.city} ${subsidiary.state} ${subsidiary.zip} ${subsidiary.country}</b></td>
             </tr>
+              </#if>
        <#if record.subsidiary="DK01 CW Denmark ApS">
           <tr>
                 <td align="center" class="addressheader" colspan="3"><b> ${handle.casewaretranslation.PHONE}: +${subsidiary.addrphone}</b></td>
             </tr>
+<#elseif record.subsidiary="SG01 CW Asia Pte">
+  <tr> <td align="center" class="addressheader" colspan="3"><b> ${handle.casewaretranslation.PHONE}: +${subsidiary.addrphone}</b></td></tr>
+
+
+         
           <#else>          
             <tr>
                 <td align="center" class="addressheader" colspan="3"><b> ${handle.casewaretranslation.PHONE}: ${subsidiary.addrphone}</b></td>
@@ -245,134 +281,210 @@ FileName: CaseWare Invoice Template.ftl
 
         <hr />
         <table class="body" style="width: 100%; margin-top: 10px;">
-            <tr>
-                <td colspan="20"><b>${record.trandate@label}: </b>${record.trandate}</td>
+        <#if record.subsidiary="EU02 CW NL B.V.">
+          <tr>
+                <td colspan="20"><b>${record.trandate@label}: </b>${record.trandate?string('dd.MM.yyyy')}</td>
+               <td colspan="16"><b>${record.tranid@label}: </b> ${record.tranid}</td></tr>
+                <#elseif record.subsidiary="EU03 CW C2C B.V.">
+          <tr><td colspan="20"><b>${record.trandate@label}: </b>${record.trandate?string('dd.MM.yyyy')}</td>
+               <td colspan="16"><b>${record.tranid@label}: </b> ${record.tranid}</td></tr>
+          <#elseif record.subsidiary="EU04 StriveCo GmbH">
+          <tr><td colspan="20"><b>${record.trandate@label}: </b>${record.trandate?string('dd.MM.yyyy')}</td>
+               <td colspan="16"><b>${handle.casewaretranslation.INVOICENUMBER}: </b> ${record.tranid}</td></tr>
+             <#elseif record.subsidiary="DK01 CW Denmark ApS">
+          <tr><td colspan="20"><b>${record.trandate@label}: </b>${record.trandate?string('dd.MM.yyyy')}</td>
+               <td colspan="16"><b>${record.tranid@label}: </b> ${record.tranid}</td></tr>     
+                  <#else>
+                 <tr>
+                 <td colspan="20"><b>${record.trandate@label}: </b>${record.trandate}</td>
                 <td colspan="16"><b>${record.tranid@label}: </b> ${record.tranid}</td>
             </tr>
+      </#if>    
             <tr>
                 <td><br /></td>
             </tr>
-            <#if record.subsidiary="CA04 CWI" && record.shipcountry="CA">
-              <#if record.custbody_cw_thirdpartybilling==true>
+
+<#if record.custbody_cw_thirdpartybilling==true>
+              <#if record.subsidiary.custrecord_cw_showthirdpartyname==true>
+                <#if record.subsidiary.custrecord_cw_showcustomername==false>
+                 <#if record.subsidiary="CA04 CWI" && record.shipcountry="CA">     
+                <tr>
+                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                  <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                    </tr>
+                 <#elseif record.subsidiary="CA04 CWI" && record.shipcountry="US">
+        <tr>
+                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                </tr>
+                <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="CA">
+             <tr>
+                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+           <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="US">
+              <tr>
+                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                </tr>
+          <#elseif record.subsidiary="DK01 CW Denmark ApS">
                <tr>
                     <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                    <td colspan="16"><b>${handle.casewaretranslation.VATNUMBER}: </b>${subsidiary.federalidnumber}</td>
                 </tr>
-                              <#else>
-                <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+          <#elseif record.subsidiary="GB02 CW UK">
+                    <tr>
+                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.COMPANYREGNO}: </b>${subsidiary.custrecord_cw_taxid2}</td>
                 </tr>
-                                </#if>
-            <#elseif record.subsidiary="CA04 CWI" && record.shipcountry="US">
-              <#if record.custbody_cw_thirdpartybilling==true>
+       <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
+                          <tr>
+                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                    <td colspan="16"><b>ABN: </b>${subsidiary.federalidnumber}</td>
+                </tr>       
+              <#else>
                 <tr>
                     <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
-                </tr>
-                <#else>
-                <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                  <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
                 </tr>
                 </#if>
-            <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="CA">
-               <#if record.custbody_cw_thirdpartybilling==true>
-               <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                              <#else>
-              <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                                </#if>
-            <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="US">
-              <#if record.custbody_cw_thirdpartybilling==true>
-                <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+
+
+                
+              <#else>
+                       <#if record.subsidiary="CA04 CWI" && record.shipcountry="CA">     
+                   <tr>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
+                  <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                    </tr>
+                 <#elseif record.subsidiary="CA04 CWI" && record.shipcountry="US">
+        <tr>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
                     <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
                 </tr>
-                <#else>
+                <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="CA">
+             <tr>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+           <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="US">
               <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
                     <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
                 </tr>
-                  </#if>
-                <#elseif record.subsidiary="DK01 CW Denmark ApS">
-                   <#if record.custbody_cw_thirdpartybilling==true>
+          <#elseif record.subsidiary="DK01 CW Denmark ApS">
                <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
                     <td colspan="16"><b>${handle.casewaretranslation.VATNUMBER}: </b>${subsidiary.federalidnumber}</td>
                 </tr>
-                              <#else>
-                  <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.VATNUMBER}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                                </#if>
-                    <#elseif record.subsidiary="GB02 CW UK">
-                      <#if record.custbody_cw_thirdpartybilling==true>
-                <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+          <#elseif record.subsidiary="GB02 CW UK">
+                    <tr>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
                     <td colspan="16"><b>${handle.casewaretranslation.COMPANYREGNO}: </b>${subsidiary.custrecord_cw_taxid2}</td>
                 </tr>
+       <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
+                          <tr>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
+                    <td colspan="16"><b>ABN: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+
                 <#else>
+                <tr>
+                    <td colspan="20"><b>${record.entity.companyname} c/o ${record.custbody_thirdpartyname}</b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                    </tr>
+                  </#if>
+                  </#if>
+                
+ <#else>
+<#if record.subsidiary="CA04 CWI" && record.shipcountry="CA"> 
+                 <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+      <#elseif record.subsidiary="CA04 CWI" && record.shipcountry="US">
+        <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                </tr>
+         <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="CA">
+             <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+           <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="US">
+              <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                </tr>
+          <#elseif record.subsidiary="DK01 CW Denmark ApS">
+               <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.VATNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+          <#elseif record.subsidiary="GB02 CW UK">
                     <tr>
                     <td colspan="20"><b>${record.entity.companyname} </b></td>
                     <td colspan="16"><b>${handle.casewaretranslation.COMPANYREGNO}: </b>${subsidiary.custrecord_cw_taxid2}</td>
                 </tr>
-                  </#if>
-                    <#elseif record.subsidiary="US01 CW US Audimation">
-                        <#if record.custbody_cw_thirdpartybilling==true>
-               <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.VENDORTAXID}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                              <#else>
-                      <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.VENDORTAXID}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                                </#if>
-                        <#elseif record.subsidiary="CR01 CW LaTaM">
-                    <#if record.custbody_cw_thirdpartybilling==true>
-               <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                              <#else>
-                          <tr>
-                    <td colspan="20"><b>${record.entity.companyname} </b></td>
-                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                                </#if>
-
-                      <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
-                    <#if record.custbody_cw_thirdpartybilling==true>
-               <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
-                    <td colspan="16"><b>ABN: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                              <#else>
+       <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
                           <tr>
                     <td colspan="20"><b>${record.entity.companyname} </b></td>
                     <td colspan="16"><b>ABN: </b>${subsidiary.federalidnumber}</td>
-                </tr>
-                                </#if>
+                </tr>      
+        <#else>        
+      <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>   
+        </#if>        
+       </#if>      
 <#else>
-  <#if record.custbody_cw_thirdpartybilling==true>
-               <tr>
-                    <td colspan="20"><b>${record.custbody_thirdpartyname} </b></td>
+        <#if record.subsidiary="CA04 CWI" && record.shipcountry="CA"> 
+                 <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
                 </tr>
-                              <#else>
+      <#elseif record.subsidiary="CA04 CWI" && record.shipcountry="US">
+        <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                </tr>
+         <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="CA">
+             <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+           <#elseif record.subsidiary="CA06 CW Cloud" && record.shipcountry="US">
+              <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.custrecord_cw_taxid2}</td>
+                </tr>
+          <#elseif record.subsidiary="DK01 CW Denmark ApS">
+               <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.VATNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>
+          <#elseif record.subsidiary="GB02 CW UK">
                     <tr>
                     <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.COMPANYREGNO}: </b>${subsidiary.custrecord_cw_taxid2}</td>
                 </tr>
-                                </#if>
+       <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
+                          <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>ABN: </b>${subsidiary.federalidnumber}</td>
+                </tr>      
+        <#else>        
+      <tr>
+                    <td colspan="20"><b>${record.entity.companyname} </b></td>
+                    <td colspan="16"><b>${handle.casewaretranslation.TAXNUMBER}: </b>${subsidiary.federalidnumber}</td>
+                </tr>   
+        </#if>        
+</#if>
 
-            </#if>
+
+          
 <#if record.subsidiary="GB02 CW UK">
                     <tr>
                         <td colspan="20">${handle.casewaretranslation.ATTENTION}: ${record.custbody_cw_primarycontactname}</td>
@@ -396,40 +508,109 @@ FileName: CaseWare Invoice Template.ftl
             <tr>
                 <td colspan="20">${handle.casewaretranslation.PHONE}: ${record.custbody_cw_primarycontactphone}</td>
             </tr>
- <#if record.custbody_cw_thirdpartybilling==true>
-   <#if record.custbody_thirdpartytaxid?has_content>
-     <tr>
-     <td colspan="20"> Customer VAT No: ${record.custbody_thirdpartytaxid}</td>
-     </tr>
-     </#if>
-   <#else>
-            <#if record.entity.vatregnumber?has_content>
-                <#if record.subsidiary="GB02 CW UK">
-                <tr>
-                    <td colspan="20">Customer VAT No: ${record.entity.vatregnumber}</td>
-                </tr>
-                    <#elseif record.subsidiary="DK01 CW Denmark ApS">
-                <tr>
-                    <td colspan="20">${handle.casewaretranslation.CUSTOMERVAT}: ${record.entity.vatregnumber}</td>
-                </tr>
-                    <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
-                <tr>
-                    <td colspan="20">Customer ABN: ${record.entity.vatregnumber}</td>
-                </tr>  
-                      
-                    <#else>
-                        <tr>
-                        <td colspan="20">Customer VAT No: ${record.entity.vatregnumber}</td>
-                        </tr>
-                </#if>
-                </#if>
-                <#if record.entity.custentity_cw_siren?has_content>
-                <tr>
-                    <td colspan="20">SIREN: ${record.entity.custentity_cw_siren}</td>
-                </tr>
 
+
+                  
+ <#if record.custbody_cw_thirdpartybilling==true>
+        <#if record.subsidiary.custrecord_cw_showthirdpartyname==true>
+              <#if record.subsidiary.custrecord_cw_showcustomername==false>
+                       <#if record.custbody_thirdpartytaxid?has_content>
+                                               <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                                                 <#else>
+                       <tr>
+                       <td colspan="20">Third Party VAT No: ${record.custbody_thirdpartytaxid}</td>
+                       </tr>
+                                                   </#if>
+                       </#if>
+              <#else>
+                      <#if record.entity.vatregnumber?has_content>
+                            <#if record.custbody_thirdpartytaxid?has_content>
+                              <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                                                 <#else>
+                              <tr><td colspan="20">${handle.casewaretranslation.CUSTOMERVAT}: ${record.entity.vatregnumber}</td></tr>
+                              <tr><td colspan="20">Third Party VAT No: ${record.custbody_thirdpartytaxid}</td></tr>
+                                                   </#if>
+                              <#if record.entity.custentity_cw_siren?has_content>
+                   <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                   <#else>
+                   <tr>
+                   <td colspan="20">SIREN: ${record.entity.custentity_cw_siren}</td>
+                   </tr>
+                   </#if>
                 </#if>
-                  </#if>
+                            <#else>
+                              <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                                                 <#else>
+                              <tr><td colspan="20">${handle.casewaretranslation.CUSTOMERVAT}: ${record.entity.vatregnumber}</td></tr>
+                                                   </#if>
+                              <#if record.entity.custentity_cw_siren?has_content>
+                   <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                   <#else>
+                   <tr>
+                   <td colspan="20">SIREN: ${record.entity.custentity_cw_siren}</td>
+                   </tr>
+                   </#if>
+                </#if>
+                            </#if>
+                      <#else>
+                             <#if record.custbody_thirdpartytaxid?has_content>
+                               <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                                                 <#else>
+                             <tr>
+                             <td colspan="20">Third Party VAT No: ${record.custbody_thirdpartytaxid}</td>
+                             </tr>
+                                                   </#if>
+                             </#if>
+                      </#if>
+              </#if>
+        <#else>
+               <#if record.entity.vatregnumber?has_content>
+                 <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                                                 <#else>
+               <tr><td colspan="20">Customer VAT No: ${record.entity.vatregnumber}</td></tr>
+                                                   </#if>
+                 <#if record.entity.custentity_cw_siren?has_content>
+                   <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                   <#else>
+                   <tr>
+                   <td colspan="20">SIREN: ${record.entity.custentity_cw_siren}</td>
+                   </tr>
+                   </#if>
+                </#if>
+               </#if>
+        </#if>
+<#else>
+  <#if record.entity.vatregnumber?has_content>
+                   <#if record.subsidiary="GB02 CW UK">
+                   <tr>
+                   <td colspan="20">Customer VAT No: ${record.entity.vatregnumber}</td>
+                   </tr>
+                   <#elseif record.subsidiary="DK01 CW Denmark ApS">
+                   <tr>
+                   <td colspan="20">${handle.casewaretranslation.CUSTOMERVAT}: ${record.entity.vatregnumber}</td>
+                   </tr>
+                   <#elseif record.subsidiary="AU01 CW Australia Pty Ltd.">
+                   <tr>
+                   <td colspan="20">Customer ABN: ${record.entity.vatregnumber}</td>
+                   </tr>  
+                   <#elseif record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">  
+                   <#else>
+                    <tr>
+                    <td colspan="20">${handle.casewaretranslation.CUSTOMERVAT}: ${record.entity.vatregnumber}</td>
+                    </tr>
+                    </#if>
+          </#if>
+<#if record.entity.custentity_cw_siren?has_content>
+                   <#if record.subsidiary=="EU04 StriveCo GmbH" && record.shipcountry="DE">
+                   <#else>
+                   <tr>
+                   <td colspan="20">SIREN: ${record.entity.custentity_cw_siren}</td>
+                   </tr>
+                   </#if>
+                </#if>
+</#if>
+                 
+            
         </table>
 
         <hr />
@@ -453,12 +634,36 @@ FileName: CaseWare Invoice Template.ftl
                 </#if>
                 <#else>
                   <#if record.custbody_cw_cloudfirmname?has_content>
+                   <#if record.subsidiary.custrecord_cw_showthirdpartyname==true>
+                     <#if record.subsidiary.custrecord_cw_showcustomername==true>
+                       <tr>
+                       <td colspan="20"><b>${handle.casewaretranslation.CUSTOMERNUMBER}:</b> ${record.entity.entityid} </td>
+            <td colspan="20"><b>${handle.casewaretranslation.CLOUDFIRMNAME}:</b> ${record.custbody_cw_cloudfirmname} </td>
+            </tr>
+            <tr>
+                <td><br /></td>
+            </tr> 
+<#else>
+                       
                   <tr>
+                    
             <td colspan="20"><b>${handle.casewaretranslation.CLOUDFIRMNAME}:</b> ${record.custbody_cw_cloudfirmname} </td>
             </tr>
             <tr>
                 <td><br /></td>
             </tr>
+  </#if>
+                     <#else>
+                       
+                     <tr>
+                       <td colspan="20"><b>${handle.casewaretranslation.CUSTOMERNUMBER}:</b> ${record.entity.entityid} </td>
+            <td colspan="20"><b>${handle.casewaretranslation.CLOUDFIRMNAME}:</b> ${record.custbody_cw_cloudfirmname} </td>
+            </tr>
+            <tr>
+                <td><br /></td>
+            </tr> 
+                         
+                       </#if>
             </#if>
             </#if>
             <tr>
@@ -634,18 +839,18 @@ FileName: CaseWare Invoice Template.ftl
                             <#assign avgMonths = 30.4167>
                             <#assign daysBetween = (endDate - startDate) / (24 * 60 * 60 * 1000)>
                             <#assign totalMonths = daysBetween /  avgMonths>
-                    <#assign bundleName = groupItems[0].custcol_cw_bundlename>
+                            <#assign bundleName = groupItems[0].custcol_cw_bundlename>
                                     <#assign item_bundle = item_bundle + [{
-                        "bundleName": bundleName,
-                        "quantity": groupItems[0].custcol_cw_bundlequantity,
-                        "price": groupItems[0].custcol_cw_bundleunitprice?abs,
-                        "startdate": groupItems[0].custcolcw_contractstart?string,
-                        "enddate": groupItems[0].custcolcw_contractend?string,
-                        "amount": groupItems[0].custcol_cw_bundlequantity * groupItems[0].custcol_cw_bundleunitprice?abs,
-                        "totalMonths": totalMonths!0
+                                    "bundleName": bundleName,
+                                    "quantity": groupItems[0].custcol_cw_bundlequantity,
+                                    "price": groupItems[0].custcol_cw_bundleunitprice?abs,
+                                    "startdate": groupItems[0].custcolcw_contractstart?string,
+                                    "enddate": groupItems[0].custcolcw_contractend?string,
+                                    "amount": groupItems[0].custcol_cw_bundlequantity * groupItems[0].custcol_cw_bundleunitprice?abs,
+                                    "totalMonths": totalMonths!0
                                         }]>
                             <tr>
-                        <#if (bundleName?length == 0)>
+                            <#if (bundleName?length == 0)>
                                     <#if (!a_subsidiariesLayout?seq_contains(record.subsidiary.id))>
                                 <td colspan="18"><span class="itemname">${groupItems[0].custcol_cw_linedisplayname}</span></td>
                                 <td align="center" colspan="6" line-height="150%">${groupItems[0].quantity?string.number}</td>
@@ -744,7 +949,12 @@ FileName: CaseWare Invoice Template.ftl
                 <td align="right" colspan="4">${handle.casewaretranslation.VAT} (${taxline1?string["0.##"]}%)</td>
             <td align="right" colspan="2">${currency_symbol}${record.taxtotal}</td>
             </tr>
-
+     <#elseif record.subsidiary="SG01 CW Asia Pte">
+                        <tr>
+                <td colspan="4">&nbsp;</td>
+                <td align="right" colspan="4">GST (${taxline1?string["0.##"]}%)</td>
+            <td align="right" colspan="2">${currency_symbol}${record.taxtotal}</td>
+            </tr>
                     <#else>
                         <tr>
                 <td colspan="4">&nbsp;</td>
@@ -775,6 +985,11 @@ FileName: CaseWare Invoice Template.ftl
             </tr>
                             </#if>
         </table>
+
+                            <#if record.custbody_cw_notaxexplanation?has_content>
+<span class="terms"><i>${record.custbody_cw_notaxexplanation}</i></span><br /><br />
+                              </#if>
+                            
         <#if record.terms="Net 10">
         <span class="paymentterms">${handle.casewaretranslation.PAYMENTTERMS}: ${handle.casewaretranslation.NET10}</span><br /><br />
         <#elseif record.terms="Net 120">
@@ -797,24 +1012,47 @@ FileName: CaseWare Invoice Template.ftl
 		<span class="paymentterms">${handle.casewaretranslation.PAYMENTTERMS}: ${record.terms}</span><br /><br />
                             </#if>
   <#if record.custbody_cw_pdfnotes?has_content>
-    <span class="terms"><b>${handle.casewaretranslation.NOTES}: </b>${record.custbody_cw_pdfnotes}</span><br /><br />
+    <span class="terms">${handle.casewaretranslation.NOTES}: ${record.custbody_cw_pdfnotes}</span><br /><br />
     </#if>
-<#if record.subsidiary="DK01 CW Denmark ApS">
-  <#if record.custbody_cw_ccsurchargedetails?has_content> <span class="terms"><b>${handle.casewaretranslation.CCSURCHARGE}: </b>${record.custbody_cw_ccsurchargedetails}</span><br /><br />
-  </#if>
- <span class="terms">${handle.casewaretranslation.PAYMENTMETHODS}.</span><br /><br />
-        <span class="terms">${handle.casewaretranslation.PAYBYWIRE}:</span><br /><br />
-                <span class="terms">${record.custbody_cwremitref}</span><br /><br />
+
+    
+<#if record.subsidiary.custrecord_cw_hidetermsconditions==true>
+    <#if record.custbody_cw_ccsurchargedetails?has_content> <span class="terms"><b>${handle.casewaretranslation.CCSURCHARGE}: </b>${record.custbody_cw_ccsurchargedetails}</span><br /><br />
+    </#if>
+    <#if record.subsidiary="DK01 CW Denmark ApS">
+             <span class="terms">${subsidiary.custrecord_cw_paymentmethod}</span><br /><br />
+             <#if record.custbody_cw_fikcode?has_content>
+                    <span class="terms">${record.custbody_cw_fikcode}</span><br /><br />
+            </#if>
+    <#else>
+            <span class="terms">${handle.casewaretranslation.PAYMENTMETHODS} ${subsidiary.custrecord_cw_paymentmethod}.</span><br /><br />
+            <span class="terms">${handle.casewaretranslation.PAYBYWIRE}:</span><br /><br />
+    </#if>         
+<span class="terms">${record.custbody_cwremitref}</span><br /><br />
                     <#if record.custbody_cwchequeinfo?has_content>
                     <span class="terms">${handle.casewaretranslation.PAYBYCHEQUE}:</span><br /><br />
                     <span class="terms">${record.custbody_cwchequeinfo}</span><br /><br />
                     </#if>
+                      <#if record.subsidiary="EU02 CW NL B.V.">
+                      <#elseif record.subsidiary="EU03 CW C2C B.V.">
+                        <#elseif record.subsidiary="EU04 StriveCo GmbH">
+                        <#else>
         <span class="terms">${handle.casewaretranslation.PAYBYBANKTRANSFER} ${subsidiary.custrecord_cw_pmtconfirmationemail}.</span><br /><br />
-        <span class="terms">${handle.casewaretranslation.BILLINGINQUIRIES} ${subsidiary.custrecord_cw_billingemail}.</span>  
-  
-  <#else>
-
-                <span class="terms">${handle.casewaretranslation.TERMS}</span><br />
+                          </#if>
+        <span class="terms">${handle.casewaretranslation.BILLINGINQUIRIES} ${subsidiary.custrecord_cw_billingemail}.</span>
+<#else>
+  <#if record.subsidiary="CR01 CW LatAm" && record.entity.category="Government">
+        <span class="terms">${handle.casewaretranslation.TERMS}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS1}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS2}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS3}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS4}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS5LATAMGOV}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS6}</span><br />
+                <span class="terms">${handle.casewaretranslation.INVTERMS7LATAMGOV}</span><br />
+                
+    <#else>
+    <span class="terms">${handle.casewaretranslation.TERMS}</span><br />
                 <span class="terms">${handle.casewaretranslation.INVTERMS1}</span><br />
                 <span class="terms">${handle.casewaretranslation.INVTERMS2}</span><br />
                 <span class="terms">${handle.casewaretranslation.INVTERMS3}</span><br />
@@ -823,13 +1061,12 @@ FileName: CaseWare Invoice Template.ftl
                 <span class="terms">${handle.casewaretranslation.INVTERMS6}</span><br />
                 <span class="terms">${handle.casewaretranslation.INVTERMS7}</span><br />
                 <span class="terms">${handle.casewaretranslation.INVTERMS8}</span><br /><br />
+
+      </#if>
                 <#if record.custbody_cw_ccsurchargedetails?has_content> <span class="terms"><b>${handle.casewaretranslation.CCSURCHARGE}: </b>${record.custbody_cw_ccsurchargedetails}</span><br /><br />
                     </#if>
-                    <#if record.subsidiary="AU01 CW Australia Pty Ltd.">
-                     <span class="terms">Payment Methods: Credit Cards (Visa, MasterCard), Skrill, Bank Transfer/Wire and Cheque</span><br /><br />
-                    <#else>
-        <span class="terms">${handle.casewaretranslation.PAYMENTMETHODS}.</span><br /><br />
-                      </#if>
+        <span class="terms">${handle.casewaretranslation.PAYMENTMETHODS} ${subsidiary.custrecord_cw_paymentmethod}.</span><br /><br />
+
         <span class="terms">${handle.casewaretranslation.PAYBYWIRE}:</span><br /><br />
         <span class="terms">${record.custbody_cwremitref}</span><br /><br />
                     <#if record.custbody_cwchequeinfo?has_content>
@@ -837,7 +1074,8 @@ FileName: CaseWare Invoice Template.ftl
                     <span class="terms">${record.custbody_cwchequeinfo}</span><br /><br />
                     </#if>
         <span class="terms">${handle.casewaretranslation.PAYBYBANKTRANSFER} ${subsidiary.custrecord_cw_pmtconfirmationemail}.</span><br /><br />
-        <span class="terms">${handle.casewaretranslation.BILLINGINQUIRIES} ${subsidiary.custrecord_cw_billingemail}.</span>
-    </#if>  
+        <span class="terms">${handle.casewaretranslation.BILLINGINQUIRIES} ${subsidiary.custrecord_cw_billingemail}.</span>                               
+</#if>
+  
     </body>
 </pdf>
